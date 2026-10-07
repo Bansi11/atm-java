@@ -5,53 +5,46 @@ package atm;
  * Entry point of the program.
  */
 import java.util.Scanner;
+import atm.model.CheckingAccount;
+import atm.security.PinHasher;
+import atm.security.OtpGenerator;
+import atm.core.Session;
+import atm.core.ATM;
+
 
 public class Main {
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         Scanner clavier = new Scanner(System.in);
+        String pinCorrectHash = PinHasher.hash("1234");
 
         System.out.println("Bienvenue au distributeur automatique");
         System.out.println("Veuillez inserer votre carte");
         System.out.println("Entrez votre code PIN");
 
-        double solde = 50000.0; // Exemple de solde initial
-        System.out.println(solde);
-        int pinCorrect = 1234; // Exemple de code PIN correct
-        System.out.println(pinCorrect == 1234);
+        CheckingAccount compte = new CheckingAccount();
+        compte.credit(50000.0); // Exemple de solde initiail
+        System.out.println(compte.getSolde());
 
-        int pinSaisi = clavier.nextInt();
+            String pinSaisi = clavier.nextLine();
+            Session session = new Session();
 
-        if (pinSaisi == pinCorrect) {
-            System.out.println("Code PIN correct.");
-            System.out.println("Que souhaitez-vous faire ?");
-            System.out.println("1. Retirer de l'argent");
-            System.out.println("2. Consulter le solde");
-            System.out.println( "3. Quitter");
+            if (session.checkPin(pinSaisi, pinCorrectHash)) {
+                System.out.println("CODE PIN CORRECT. GENERATION DU CODE DE VERIFICATION...");
 
-            int choix = clavier.nextInt();
-            
-            switch (choix) {
-                case 1:
-                    System.out.println("Entrez le montant a retirer : ");
-                    double montantRetirer = clavier.nextDouble();
-                    if (montantRetirer <= solde) {
-                        solde -= montantRetirer;
-                        System.out.println("Retrait effectue. Solde restant : " + solde);
-                    } else {
-                        System.out.println("Fonds insuffisants.");
-                    }
-                    break;
-                case 2:
-                    System.out.println("Votre solde est : " + solde);
-                    break;
-                case 3:
-                    System.out.println("Merci d'avoir utilise notre distributeur automatique.");
-                    break;
-                default:
-                    System.out.println("Choix invalide.");
+                String otp = OtpGenerator.generateOtp();
+                System.out.println("VOTRE CODE DE VERIFICATION EST : " + otp);
+                System.out.println("ENTREZ LE CODE DE VERIFICATION : ");
+
+                String otpSaisi = clavier.nextLine();
+
+                if (session.checkOtp(otpSaisi, otp)) {
+                    ATM atm = new ATM();
+                    atm.showMenu(clavier, compte);
+                } else {
+                    System.out.println("CODE DE VERIFICATION INCORRECT. ACCESS DENIED.");    
+                }
+            } else {
+                System.out.println("CODE PIN INCORRECT. ACCESS DENIED.");
             }
-        } else {
-            System.out.println("Code PIN incorrect. Access Denied");
         }
-    }
 }
